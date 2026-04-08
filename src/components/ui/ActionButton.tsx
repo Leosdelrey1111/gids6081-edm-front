@@ -1,7 +1,7 @@
 import { Button, Tooltip } from '@heroui/react';
 import { Icon } from '@iconify/react';
 
-type ButtonVariant = 'add' | 'delete' | 'edit' | 'info' | 'custom' | 'default';
+type ButtonVariant = 'add' | 'delete' | 'edit' | 'info' | 'view' | 'custom' | 'default';
 
 interface ActionButtonProps {
   onPress: () => void;
@@ -15,7 +15,7 @@ const iconMap: Record<string, string> = {
   delete:  'mdi:trash-can-outline',
   edit:    'mdi:pencil-outline',
   info:    'mdi:information-outline',
-  custom:  'mdi:cog-outline',
+  view:    'mdi:eye-outline',
   default: 'mdi:cursor-default-outline',
 };
 
@@ -24,13 +24,13 @@ const hoverStyles: Record<ButtonVariant, string> = {
   delete:  'hover:border-red-600 hover:bg-red-100 hover:dark:bg-red-900/30 hover:text-red-600 hover:dark:text-red-400',
   edit:    'hover:border-blue-600 hover:bg-blue-100 hover:dark:bg-blue-900/30 hover:text-blue-600 hover:dark:text-blue-400',
   info:    'hover:border-blue-600 hover:bg-blue-100 hover:dark:bg-blue-900/30 hover:text-blue-600 hover:dark:text-blue-400',
-  custom:  'hover:border-purple-600 hover:bg-purple-100 hover:dark:bg-purple-900/30 hover:text-purple-600 hover:dark:text-purple-400',
+  view:    'hover:border-teal-600 hover:bg-teal-100 hover:dark:bg-teal-900/30 hover:text-teal-600 hover:dark:text-teal-400',
   default: 'hover:border-gray-500 hover:bg-gray-100 hover:dark:bg-gray-900/30',
 };
 
 const tooltips: Record<ButtonVariant, string> = {
   add: 'Agregar', delete: 'Eliminar', edit: 'Editar',
-  info: 'Información', custom: 'Acción', default: 'Default',
+  view: 'Ver detalle',
 };
 
 export function ActionButton({ onPress, typeButton = 'default', tooltipText, isDisabled = false }: ActionButtonProps) {

@@ -2,13 +2,12 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import { authService } from '@services/auth.service';
 import { tokenStore } from '@utils/token';
 import { logger } from '@utils/logger';
-import { sessionStore, resolveRole, restoreSession } from '@shared/auth/useAuthUtils';
-import type { AuthUser, Role } from '@shared/auth/AuthInterfaces';
+import { sessionStore, restoreSession } from '@shared/auth/useAuthUtils';
+import type { AuthUser } from '@shared/auth/AuthInterfaces';
 
 interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
-  isAdmin: boolean;
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
   register: (name: string, lastName: string, username: string, password: string) => Promise<void>;
@@ -17,7 +16,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export type { Role, AuthUser };
+export type { AuthUser };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -34,20 +33,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (username: string, password: string) => {
     const { payload, accessToken } = await authService.login(username, password);
-    const authUser: AuthUser = { ...payload, role: resolveRole(payload.sub) };
     tokenStore.set(accessToken);
     sessionStore.save({ accessToken, loggedIn: true });
-    setUser(authUser);
-    logger.audit('LOGIN', authUser.sub, { username });
+    setUser(payload as AuthUser);
+    logger.audit('LOGIN', payload.sub, { username });
   };
 
   const register = async (name: string, lastName: string, username: string, password: string) => {
     const { payload, accessToken } = await authService.register({ name, lastName, username, password });
-    const authUser: AuthUser = { ...payload, role: resolveRole(payload.sub) };
     tokenStore.set(accessToken);
     sessionStore.save({ accessToken, loggedIn: true });
-    setUser(authUser);
-    logger.audit('REGISTER', authUser.sub, { username });
+    setUser(payload as AuthUser);
+    logger.audit('REGISTER', payload.sub, { username });
   };
 
   const logout = () => {
@@ -58,7 +55,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isAdmin: user?.role === 'admin', loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

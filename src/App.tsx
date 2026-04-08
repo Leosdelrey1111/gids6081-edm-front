@@ -9,13 +9,13 @@ import { RegisterPage } from '@pages/auth/RegisterPage';
 import { DashboardPage } from '@pages/dashboard/DashboardPage';
 import { TasksPage } from '@pages/tasks/TasksPage';
 import { UsersPage } from '@pages/users/UsersPage';
+import { LogsPage } from '@pages/logs/LogsPage';
 
 export const App = () => (
   <BrowserRouter>
     <AuthProvider>
       <Provider>
         <Routes>
-          {/* Rutas públicas — redirige al dashboard si ya hay sesión */}
           <Route element={<OpenRoutes />}>
             <Route element={<LandingLayout />}>
               <Route path="/"         element={<HomePage />} />
@@ -24,15 +24,12 @@ export const App = () => (
             </Route>
           </Route>
 
-          {/* Rutas protegidas */}
           <Route element={<ProtectedRoute />}>
             <Route element={<DashboardLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/tasks"     element={<TasksPage />} />
-              {/* Solo admin — separación de funciones */}
-              <Route element={<ProtectedRoute requiredRole="admin" />}>
-                <Route path="/users" element={<UsersPage />} />
-              </Route>
+              <Route path="/users"     element={<UsersPage />} />
+              <Route path="/logs"      element={<LogsPage />} />
             </Route>
           </Route>
 

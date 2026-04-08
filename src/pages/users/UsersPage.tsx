@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Spinner, useDisclosure, Button } from '@heroui/react';
+import { Spinner, useDisclosure, Button, addToast } from '@heroui/react';
 import { useAuth } from '@context/AuthContext';
-import { userService, type User, type UpdateUserPayload } from '@services/user.service';
+import { userService, type User, type UpdateUserPayload, type CreateUserPayload } from '@services/user.service';
 import { GenericCard } from '@components/ui/GenericCard';
 import { GenericRenderTitle } from '@components/ui/GenericRenderTitle';
 import { GenericTable } from '@components/ui/GenericTable';
@@ -9,12 +9,11 @@ import { GenericDrawer } from '@components/ui/GenericDrawer';
 import { ConfirmActionModal } from '@components/ui/ConfirmActionModal';
 import { ActionButton } from '@components/ui/ActionButton';
 import { Input } from '@components/ui/Input';
-import { Alert } from '@components/ui/Alert';
 import { logger } from '@utils/logger';
+import { Icon } from '@iconify/react';
 import type { ColumnDefinition } from '@components/ui/configs/GenericTableConfigs';
 
 const COLUMNS: ColumnDefinition[] = [
-  { name: 'ID',       uid: 'id',        sortable: true  },
   { name: 'Nombre',   uid: 'name',      sortable: true  },
   { name: 'Apellido', uid: 'lastName',  sortable: true  },
   { name: 'Usuario',  uid: 'username',  sortable: true  },
@@ -29,13 +28,16 @@ const UsersIcon = () => (
   </svg>
 );
 
+const emptyCreate = (): CreateUserPayload => ({ name: '', lastName: '', username: '', password: '' });
+
 export const UsersPage = () => {
   const { user: authUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [selected, setSelected] = useState<User | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   const [editForm, setEditForm] = useState<UpdateUserPayload>({});
+  const [createForm, setCreateForm] = useState<CreateUserPayload>(emptyCreate());
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -47,14 +49,22 @@ export const UsersPage = () => {
     setLoading(true);
     try { setUsers(await userService.getAll(authUser.sub)); }
     catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar usuarios.');
-      logger.error('UsersPage load error', { adminId: authUser.sub });
+      addToast({ title: 'Error', description: err instanceof Error ? err.message : 'Error al cargar usuarios.', color: 'danger' });
+      logger.error('UsersPage load error', { userId: authUser.sub });
     } finally { setLoading(false); }
   }, [authUser]);
 
   useEffect(() => { loadUsers(); }, [loadUsers]);
 
+  const openCreate = () => {
+    setIsCreating(true);
+    setCreateForm(emptyCreate());
+    setFormError('');
+    openDrawer();
+  };
+
   const openEdit = (u: User) => {
+    setIsCreating(false);
     setSelected(u);
     setEditForm({ name: u.name, lastName: u.lastName, username: u.username });
     setFormError('');
@@ -63,22 +73,34 @@ export const UsersPage = () => {
 
   const openConfirmDelete = (u: User) => { setSelected(u); openDelete(); };
 
-  const handleUpdate = async () => {
-    if (!authUser || !selected) return;
+  const handleSave = async () => {
+    if (!authUser) return;
     setSaving(true); setFormError('');
     try {
-      await userService.update(selected.id, editForm, authUser.sub);
+      if (isCreating) {
+        await userService.create(createForm, authUser.sub);
+        addToast({ title: 'Usuario creado', description: `El usuario "${createForm.username}" fue creado correctamente.`, color: 'success' });
+      } else {
+        await userService.update(selected!.id, editForm, authUser.sub);
+        addToast({ title: 'Usuario actualizado', description: 'Los datos del usuario fueron actualizados.', color: 'success' });
+      }
       closeDrawer();
       await loadUsers();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Error al actualizar.');
+      const msg = err instanceof Error ? err.message : 'Error al guardar.';
+      addToast({ title: 'Error', description: msg, color: 'danger' });
     } finally { setSaving(false); }
   };
 
   const handleDelete = async () => {
     if (!authUser || !selected) return;
-    try { await userService.remove(selected.id, authUser.sub); await loadUsers(); }
-    catch (err) { setError(err instanceof Error ? err.message : 'Error al eliminar.'); }
+    try {
+      await userService.remove(selected.id, authUser.sub);
+      addToast({ title: 'Usuario eliminado', description: `El usuario "${selected.username}" fue eliminado.`, color: 'success' });
+      await loadUsers();
+    } catch (err) {
+      addToast({ title: 'Error', description: err instanceof Error ? err.message : 'Error al eliminar.', color: 'danger' });
+    }
   };
 
   const renderCell = (u: User, key: string) => {
@@ -109,36 +131,50 @@ export const UsersPage = () => {
         boxColor="blue"
       />
 
-      {error && <Alert message={error} />}
-
       <GenericCard>
         {loading
           ? <div className="flex justify-center items-center py-16"><Spinner color="primary" size="sm" /></div>
-          : <GenericTable data={users} columns={COLUMNS} renderCell={renderCell} defaultSortColumn="id" />
+          : <GenericTable data={users} columns={COLUMNS} renderCell={renderCell} defaultSortColumn="name"
+              topContentExtras={
+                <Button size="sm" color="primary" className="font-semibold" onPress={openCreate}
+                  startContent={<Icon icon="mdi:plus" width={16} />}>
+                  Nuevo usuario
+                </Button>
+              }
+            />
         }
       </GenericCard>
 
-      {/* Drawer editar usuario */}
+
+      {/* Drawer crear / editar */}
       <GenericDrawer
         isOpen={isDrawerOpen}
         onClose={closeDrawer}
-        title="Editar usuario"
-        subtitle="Modifica los datos del usuario"
+        title={isCreating ? 'Nuevo usuario' : 'Editar usuario'}
+        subtitle={isCreating ? 'Completa los datos del nuevo usuario' : 'Modifica los datos del usuario'}
         body={
           <div className="flex flex-col gap-4 pt-2">
-            {formError && <Alert message={formError} />}
-            <Input id="edit-name"     label="Nombre"   value={editForm.name ?? ''}     onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} required />
-            <Input id="edit-lastName" label="Apellido" value={editForm.lastName ?? ''} onChange={e => setEditForm(p => ({ ...p, lastName: e.target.value }))} required />
-            <Input id="edit-username" label="Usuario"  value={editForm.username ?? ''} onChange={e => setEditForm(p => ({ ...p, username: e.target.value }))} required />
-            <Input id="edit-password" label="Nueva contraseña (opcional)" type="password"
-              value={editForm.password ?? ''} onChange={e => setEditForm(p => ({ ...p, password: e.target.value }))} />
+            {isCreating ? (
+              <>
+                <Input id="c-name"     label="Nombre"      value={createForm.name}     onChange={e => setCreateForm(p => ({ ...p, name: e.target.value }))} required />
+                <Input id="c-lastName" label="Apellido"    value={createForm.lastName} onChange={e => setCreateForm(p => ({ ...p, lastName: e.target.value }))} required />
+                <Input id="c-username" label="Usuario"     value={createForm.username} onChange={e => setCreateForm(p => ({ ...p, username: e.target.value }))} required />
+                <Input id="c-password" label="Contraseña"  type="password" value={createForm.password} onChange={e => setCreateForm(p => ({ ...p, password: e.target.value }))} required />
+              </>
+            ) : (
+              <>
+                <Input id="e-name"     label="Nombre"   value={editForm.name ?? ''}     onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} required />
+                <Input id="e-lastName" label="Apellido" value={editForm.lastName ?? ''} onChange={e => setEditForm(p => ({ ...p, lastName: e.target.value }))} required />
+                <Input id="e-username" label="Usuario"  value={editForm.username ?? ''} onChange={e => setEditForm(p => ({ ...p, username: e.target.value }))} required />
+              </>
+            )}
           </div>
         }
         footer={
           <div className="flex gap-2 justify-end w-full">
             <Button variant="flat" onPress={closeDrawer}>Cancelar</Button>
-            <Button color="primary" isLoading={saving} onPress={handleUpdate}>
-              {saving ? 'Guardando...' : 'Guardar cambios'}
+            <Button color="primary" isLoading={saving} onPress={handleSave}>
+              {saving ? 'Guardando...' : isCreating ? 'Crear usuario' : 'Guardar cambios'}
             </Button>
           </div>
         }

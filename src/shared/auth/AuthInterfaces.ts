@@ -1,11 +1,7 @@
-export type Role = 'admin' | 'user';
-
 export interface AuthUser {
   sub: number;
-  username: string;
   name: string;
   lastName: string;
-  role: Role;
   exp: number;
   iat: number;
 }

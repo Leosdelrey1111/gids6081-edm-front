@@ -22,4 +22,8 @@ export const authService = {
     logger.audit('REGISTER_SERVICE', payload.sub);
     return { payload, accessToken: data.access_token };
   },
+
+  async resetPassword(username: string, newPassword: string): Promise<void> {
+    await http.post('/api/auth/reset-password', { username, newPassword });
+  },
 };

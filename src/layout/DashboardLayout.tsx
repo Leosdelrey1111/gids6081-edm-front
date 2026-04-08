@@ -1,109 +1,175 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, cloneElement, isValidElement } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@context/AuthContext';
 import { useNavigationItems } from '@shared/hooks/useNavigationItems';
-import { Avatar, Button, Card, CardBody, CardFooter, Chip } from '@heroui/react';
+import { Avatar, Button, Card, CardBody, CardFooter, Popover, PopoverContent, PopoverTrigger, Tooltip } from '@heroui/react';
 import { motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
+import { ThemeToggle } from '@components/ui/ThemeToggle';
+import { PageTransition } from '@components/ui/PageTransition';
 
 const getInitials = (name = '', last = '') =>
   `${name[0] ?? ''}${last[0] ?? ''}`.toUpperCase() || 'U';
 
-const titles: Record<string, string> = {
-  '/dashboard': 'Dashboard',
-  '/tasks':     'Mis Tareas',
-  '/users':     'Usuarios',
-};
+const SIDEBAR_OPEN  = 280;
+const SIDEBAR_CLOSED = 88;
 
 export const DashboardLayout = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const navSections = useNavigationItems();
-  const [collapsed, setCollapsed] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+
+  const [toggleSidebar, setToggleSidebar] = useState<boolean>(() => {
+    const saved = sessionStorage.getItem('sidebar-collapsed');
+    if (saved !== null) return saved === 'false';
+    return window.innerWidth >= 1024;
+  });
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  const prevWidth = useRef(window.innerWidth);
+
+  const setAndSave = (val: boolean) => {
+    setToggleSidebar(val);
+    sessionStorage.setItem('sidebar-collapsed', String(!val));
+  };
 
   useEffect(() => {
-    const check = () => {
+    const onResize = () => {
       const w = window.innerWidth;
-      setIsMobile(w < 768);
-      setCollapsed(w < 1024);
+      const wasMobile = prevWidth.current < 768;
+      const nowMobile = w < 768;
+      if (!wasMobile && nowMobile) setAndSave(false);
+      if (wasMobile && !nowMobile && w >= 1024) setAndSave(true);
+      setIsMobile(nowMobile);
+      prevWidth.current = w;
     };
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  const pageTitle = titles[location.pathname] ?? 'EDM App';
+  // Cerrar en mobile al navegar
+  useEffect(() => { if (isMobile) setAndSave(false); }, [location.pathname]);
 
   return (
     <div className="flex flex-1 overflow-hidden">
       <div className="flex h-screen">
+
+        {/* Overlay mobile */}
+        {isMobile && toggleSidebar && (
+          <button
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setAndSave(false)}
+            aria-label="Cerrar menú"
+          />
+        )}
+
         {/* Sidebar */}
         <div className="relative flex group">
-          <Button isIconOnly onPress={() => setCollapsed(c => !c)} radius="full" variant="flat" size="sm"
-            className={`absolute z-50 transition-all duration-300
+          {/* Toggle button */}
+          <Button
+            isIconOnly onPress={() => setAndSave(!toggleSidebar)}
+            radius="full" variant="flat" size="sm"
+            className={`absolute z-50 transition-all duration-300 ease-in-out
               bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm
               border border-gray-200/50 dark:border-gray-700/50
-              hover:bg-white/90 dark:hover:bg-gray-700/90 hover:scale-105 active:scale-95 shadow-lg
+              hover:bg-white/90 dark:hover:bg-gray-700/90
+              hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl
               ${isMobile
                 ? 'top-4 left-4 opacity-100 visible'
                 : 'top-12 left-[calc(100%-20px)] opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:left-[calc(100%-16px)]'
               }`}>
-            {collapsed ? <Icon icon="mdi:chevron-right" width={16} /> : <Icon icon="mdi:chevron-left" width={16} />}
+            {isMobile
+              ? toggleSidebar
+                ? <Icon icon="mdi:close" width={16} />
+                : <Icon icon="mdi:menu" width={16} />
+              : toggleSidebar
+                ? <Icon icon="mdi:chevron-left" width={16} />
+                : <Icon icon="mdi:chevron-right" width={16} />
+            }
           </Button>
 
           <motion.div
             className={`flex-grow flex flex-col dark:border-r dark:border-gray-700 ${isMobile ? 'fixed left-0 top-0 h-full z-50' : 'relative'}`}
-            animate={{ width: collapsed ? (isMobile ? 0 : 88) : (isMobile ? 280 : 280), x: isMobile && collapsed ? -280 : 0 }}
+            animate={{
+              width: toggleSidebar ? (isMobile ? SIDEBAR_OPEN : SIDEBAR_OPEN) : isMobile ? 0 : SIDEBAR_CLOSED,
+              x: isMobile && !toggleSidebar ? -SIDEBAR_OPEN : 0,
+            }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
           >
-            <Card className={`flex flex-col flex-grow bg-white dark:bg-[#18191a] rounded-sm p-2 h-full ${collapsed && !isMobile ? 'w-22' : 'w-70'}`}>
+            <Card className={`flex flex-col flex-grow bg-white dark:bg-[#18191a] rounded-sm p-2 h-full overflow-hidden`}>
+
               {/* User info */}
-              <div className="flex-shrink-0 p-3">
-                {collapsed && !isMobile ? (
-                  <div className="flex flex-col items-center py-2 gap-2">
-                    <Avatar name={getInitials(user?.name, user?.lastName)} size="md"
-                      className="bg-success text-white font-bold ring-2 ring-success/30" />
-                  </div>
+              <div className="flex-shrink-0">
+                {!toggleSidebar && !isMobile ? (
+                  <Tooltip placement="right" delay={300} closeDelay={0}
+                    content={<div className="p-2"><p className="font-semibold text-sm">{user?.name} {user?.lastName}</p></div>}>
+                    <div className="flex flex-col items-center py-4 gap-2">
+                      <Avatar name={getInitials(user?.name, user?.lastName)} size="md"
+                        className="bg-primary text-white font-bold ring-2 ring-primary/30 hover:ring-primary/50 transition-all" />
+                    </div>
+                  </Tooltip>
                 ) : (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3">
-                    <Avatar name={getInitials(user?.name, user?.lastName)} size="md"
-                      className="bg-success text-white font-bold ring-2 ring-success/30 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">{user?.name} {user?.lastName}</p>
-                      <p className="text-xs text-success font-medium capitalize">{user?.role}</p>
+                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="p-3">
+                    <div className="flex items-center gap-3">
+                      <Avatar name={getInitials(user?.name, user?.lastName)} size="md"
+                        className="bg-primary text-white font-bold ring-2 ring-primary/30 hover:ring-primary/50 hover:scale-105 transition-all flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">{user?.name} {user?.lastName}</p>
+                        <p className="text-xs text-primary font-medium truncate">Usuario</p>
+                      </div>
                     </div>
                   </motion.div>
                 )}
-                <div className="px-1 pt-3 pb-1">
-                  <div className="h-px bg-gradient-to-r from-transparent via-success/50 to-transparent" />
+                <div className="px-2 pb-2">
+                  <div className="h-px bg-gradient-to-r from-transparent via-primary/50 dark:via-primary/40 to-transparent" />
                 </div>
               </div>
 
-              {/* Nav */}
-              <CardBody className="flex-grow overflow-y-auto text-gray-300 px-1 pt-0">
+              <CardBody className="flex-grow overflow-y-auto overflow-x-hidden text-gray-300 px-1 pt-0">
                 {navSections.map(({ section, items }) => (
                   <div key={section}>
-                    {!collapsed && (
+                    {toggleSidebar && (
                       <h2 className="text-xs uppercase text-gray-400 tracking-wide pl-3 mt-2 mb-1">{section}</h2>
                     )}
                     <nav className="space-y-1 px-1 mb-3">
-                      {items.map(item => {
-                        const isActive = location.pathname === item.url;
-                        return (
-                          <NavLink key={item.url} to={item.url} className="block">
-                            <Button fullWidth radius="md" variant="light" color="default" as="span"
-                              startContent={<span className={`flex-shrink-0 ${isActive ? 'text-white' : 'text-success'}`}>{item.icon}</span>}
-                              className={`h-11 transition-all
-                                ${collapsed && !isMobile ? 'justify-center px-0' : 'justify-start pl-2'}
-                                ${isActive
-                                  ? 'bg-success text-white shadow-lg hover:!bg-success/90'
-                                  : 'dark:text-gray-400 hover:bg-default-100'
-                                }`}>
-                              {(!collapsed || isMobile) && <span className="text-sm">{item.label}</span>}
-                            </Button>
+                      {items.map(({ url, label, icon }) => {
+                        const isActive = location.pathname === url;
+                        const styledIcon = isValidElement(icon)
+                          ? cloneElement(icon as React.ReactElement<any>, {
+                              className: `w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-primary'}`,
+                            })
+                          : icon;
+
+                        const btn = (
+                          <NavLink key={url} to={url} className="block">
+                            {toggleSidebar ? (
+                              <Button fullWidth radius="md" variant="light" color="default" as="span"
+                                startContent={styledIcon}
+                                className={`h-11 justify-start pl-2 rounded-sm transition-all
+                                  ${isActive
+                                    ? 'bg-primary text-white shadow-lg hover:!bg-primary/90'
+                                    : 'dark:text-gray-400 hover:bg-default-100'
+                                  }`}>
+                                <span className="text-sm truncate">{label}</span>
+                              </Button>
+                            ) : (
+                              <Button isIconOnly radius="md" variant="light" color="default" as="span"
+                                className={`h-11 w-full transition-all
+                                  ${isActive
+                                    ? 'bg-primary text-white shadow-lg hover:!bg-primary/90'
+                                    : 'dark:text-gray-400 hover:bg-default-100'
+                                  }`}>
+                                {styledIcon}
+                              </Button>
+                            )}
                           </NavLink>
+                        );
+
+                        return toggleSidebar ? btn : (
+                          <Tooltip key={url} placement="right" delay={0} closeDelay={0}
+                            content={<div className="px-2 py-1 text-sm">{label}</div>}>
+                            {btn}
+                          </Tooltip>
                         );
                       })}
                     </nav>
@@ -111,13 +177,43 @@ export const DashboardLayout = () => {
                 ))}
               </CardBody>
 
-              {/* Footer logout */}
-              <CardFooter className="mt-auto justify-center">
-                <Button isIconOnly={collapsed && !isMobile} variant="light" className="text-danger hover:bg-danger/10 w-full"
-                  onPress={() => { logout(); navigate('/login', { replace: true }); }}>
-                  <Icon icon="mdi:logout" width={20} />
-                  {(!collapsed || isMobile) && <span className="ml-2 text-sm font-medium">Cerrar sesión</span>}
-                </Button>
+              {/* Footer */}
+              <CardFooter className="mt-auto flex-shrink-0">
+                {toggleSidebar ? (
+                  <div className="flex w-full justify-center items-center gap-4">
+                    <ThemeToggle />
+                    <Popover backdrop="opaque">
+                      <PopoverTrigger asChild>
+                        <Button isIconOnly variant="light" className="text-danger hover:bg-danger/10">
+                          <Icon icon="mdi:logout" width={20} />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[220px] p-4">
+                        <p className="text-sm font-bold text-center mb-3">¿Cerrar sesión?</p>
+                        <div className="flex gap-2">
+                          <Button fullWidth size="sm" color="danger" variant="flat"
+                            onPress={() => (document.activeElement as HTMLElement)?.blur()}>
+                            Cancelar
+                          </Button>
+                          <Button fullWidth size="sm" color="success" className="text-white"
+                            onPress={() => { logout(); navigate('/login', { replace: true }); }}>
+                            Salir
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                ) : (
+                  <div className="flex w-full flex-col items-center gap-2">
+                    <ThemeToggle />
+                    <Tooltip placement="right" delay={0} closeDelay={0} content={<div className="px-2 py-1 text-sm">Cerrar sesión</div>}>
+                      <Button isIconOnly variant="light" className="text-danger hover:bg-danger/10"
+                        onPress={() => { logout(); navigate('/login', { replace: true }); }}>
+                        <Icon icon="mdi:logout" width={20} />
+                      </Button>
+                    </Tooltip>
+                  </div>
+                )}
               </CardFooter>
             </Card>
           </motion.div>
@@ -125,23 +221,14 @@ export const DashboardLayout = () => {
       </div>
 
       {/* Main content */}
-      <div className="h-screen flex flex-col flex-grow overflow-x-hidden">
+      <div className="h-screen flex flex-col flex-grow overflow-x-hidden min-w-0">
         <div className="min-w-full min-h-full overflow-auto">
           <Card className="min-w-full min-h-full flex flex-col bg-[#f9fafb] dark:bg-[#18191a] rounded-sm">
-            {/* Topbar */}
-            <div className="flex items-center px-6 h-14 bg-white dark:bg-[#18191a] border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-              <span className="text-base font-semibold text-foreground tracking-tight">{pageTitle}</span>
-              <div className="flex-1" />
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-default-500">{user?.name} {user?.lastName}</span>
-                <Chip size="sm" variant="flat" color={user?.role === 'admin' ? 'warning' : 'success'} className="font-semibold capitalize">
-                  {user?.role}
-                </Chip>
-              </div>
-            </div>
             <CardBody className="flex-grow p-1 overflow-x-hidden">
-              <div className="w-full overflow-x-auto p-6 pb-0">
-                <Outlet />
+              <div className="w-full p-6 pb-0">
+                <PageTransition>
+                  <Outlet />
+                </PageTransition>
               </div>
             </CardBody>
           </Card>

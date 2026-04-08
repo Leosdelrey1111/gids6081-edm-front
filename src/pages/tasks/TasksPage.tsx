@@ -1,23 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Chip, Spinner, useDisclosure } from '@heroui/react';
+import { Chip, Spinner, useDisclosure, Button, addToast } from '@heroui/react';
 import { useAuth } from '@context/AuthContext';
-import { taskService, type Task, type CreateTaskPayload } from '@services/task.service';
+import { taskService, type Task } from '@services/task.service';
 import { GenericCard } from '@components/ui/GenericCard';
 import { GenericRenderTitle } from '@components/ui/GenericRenderTitle';
 import { GenericTable } from '@components/ui/GenericTable';
 import { GenericDrawer } from '@components/ui/GenericDrawer';
 import { ConfirmActionModal } from '@components/ui/ConfirmActionModal';
 import { ActionButton } from '@components/ui/ActionButton';
-import { FloatingButton } from '@components/ui/FloatingButton';
 import { Input } from '@components/ui/Input';
-import { Alert } from '@components/ui/Alert';
-import { Button, Checkbox } from '@heroui/react';
+import { Checkbox } from '@heroui/react';
 import { validateLength } from '@utils/sanitize';
 import { logger } from '@utils/logger';
+import { Icon } from '@iconify/react';
 import type { ColumnDefinition } from '@components/ui/configs/GenericTableConfigs';
 
 const COLUMNS: ColumnDefinition[] = [
-  { name: '#',           uid: 'id',          sortable: true  },
   { name: 'Nombre',      uid: 'name',        sortable: true  },
   { name: 'Descripción', uid: 'description', sortable: false },
   { name: 'Prioridad',   uid: 'priority',    sortable: true  },
@@ -34,7 +32,6 @@ export const TasksPage = () => {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [selected, setSelected] = useState<Task | null>(null);
 
   // Drawer crear/editar
@@ -50,10 +47,10 @@ export const TasksPage = () => {
 
   const loadTasks = useCallback(async () => {
     if (!user) return;
-    setLoading(true); setError('');
+    setLoading(true);
     try { setTasks(await taskService.getMyTasks(user.sub)); }
     catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar tareas.');
+      addToast({ title: 'Error', description: err instanceof Error ? err.message : 'Error al cargar tareas.', color: 'danger' });
       logger.error('TasksPage load error', { userId: user.sub });
     } finally { setLoading(false); }
   }, [user]);
@@ -88,19 +85,30 @@ export const TasksPage = () => {
     if (!user || !validate()) return;
     setSaving(true); setFormApiError('');
     try {
-      if (selected) await taskService.update(selected.id, form, user.sub);
-      else          await taskService.create({ ...form, user_id: user.sub }, user.sub);
+      if (selected) {
+        await taskService.update(selected.id, form, user.sub);
+        addToast({ title: 'Tarea actualizada', description: `"${form.name}" fue actualizada correctamente.`, color: 'success' });
+      } else {
+        await taskService.create({ ...form, user_id: user.sub }, user.sub);
+        addToast({ title: 'Tarea creada', description: `"${form.name}" fue creada correctamente.`, color: 'success' });
+      }
       closeDrawer();
       await loadTasks();
     } catch (err) {
-      setFormApiError(err instanceof Error ? err.message : 'Error al guardar.');
+      const msg = err instanceof Error ? err.message : 'Error al guardar.';
+      addToast({ title: 'Error', description: msg, color: 'danger' });
     } finally { setSaving(false); }
   };
 
   const handleDelete = async () => {
     if (!user || !selected) return;
-    try { await taskService.remove(selected.id, user.sub); await loadTasks(); }
-    catch (err) { setError(err instanceof Error ? err.message : 'Error al eliminar.'); }
+    try {
+      await taskService.remove(selected.id, user.sub);
+      addToast({ title: 'Tarea eliminada', description: `"${selected.name}" fue eliminada.`, color: 'success' });
+      await loadTasks();
+    } catch (err) {
+      addToast({ title: 'Error', description: err instanceof Error ? err.message : 'Error al eliminar.', color: 'danger' });
+    }
   };
 
   const renderCell = (task: Task, key: string) => {
@@ -121,21 +129,23 @@ export const TasksPage = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div>
         <GenericRenderTitle title="Mis Tareas" subtitle="Administra y organiza tus tareas pendientes" icon={<TaskIcon />} boxColor="green" />
       </div>
-
-      {error && <Alert message={error} />}
 
       <GenericCard>
         {loading
           ? <div className="flex justify-center items-center py-16"><Spinner color="success" size="sm" /></div>
-          : <GenericTable data={tasks} columns={COLUMNS} renderCell={renderCell} defaultSortColumn="id" />
+          : <GenericTable data={tasks} columns={COLUMNS} renderCell={renderCell} defaultSortColumn="name"
+              topContentExtras={
+                <Button size="sm" color="success" className="text-white font-semibold" onPress={openCreate}
+                  startContent={<Icon icon="mdi:plus" width={16} />}>
+                  Nueva tarea
+                </Button>
+              }
+            />
         }
       </GenericCard>
-
-      {/* Botón flotante agregar */}
-      <FloatingButton onPress={openCreate} title="Nueva tarea" position="top-right" />
 
       {/* Drawer crear / editar */}
       <GenericDrawer
@@ -145,7 +155,6 @@ export const TasksPage = () => {
         subtitle="Completa la información de la tarea"
         body={
           <div className="flex flex-col gap-4 pt-2">
-            {formApiError && <Alert message={formApiError} />}
             <Input id="task-name" label="Nombre" value={form.name}
               onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
               error={formErrors.name} maxLength={150} required />

@@ -1,4 +1,6 @@
 import { Link, Outlet } from 'react-router-dom';
+import { ThemeToggle } from '@components/ui/ThemeToggle';
+import { PageTransition } from '@components/ui/PageTransition';
 
 export function LandingLayout() {
   return (
@@ -10,6 +12,7 @@ export function LandingLayout() {
             <span className="font-bold text-zinc-100 tracking-tight">EDM App</span>
           </div>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Link to="/login" className="text-sm font-medium text-zinc-400 hover:text-zinc-100 transition-colors px-3 py-1.5">
               Iniciar sesión
             </Link>
@@ -19,7 +22,7 @@ export function LandingLayout() {
           </div>
         </div>
       </header>
-      <main className="flex-1"><Outlet /></main>
+      <main className="flex-1"><PageTransition><Outlet /></PageTransition></main>
       <footer className="border-t border-zinc-800/60 py-6 text-center text-xs text-zinc-600">
         © {new Date().getFullYear()} EDM App — Gestión segura de tareas
       </footer>

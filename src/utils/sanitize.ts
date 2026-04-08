@@ -6,7 +6,7 @@ export const sanitizeHtml = (dirty: string): string =>
 
 /** Sanitiza texto plano eliminando caracteres peligrosos */
 export const sanitizeText = (value: string): string =>
-  value.replace(/[<>"'`]/g, '').trim();
+  value.replace(/[<>"'`]/g, '');
 
 /** Valida longitud mínima y máxima */
 export const validateLength = (value: string, max: number, min = 1): boolean =>

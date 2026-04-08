@@ -1,11 +1,8 @@
 import { tokenStore, decodeToken, isTokenExpired } from '@utils/token';
 import { logger } from '@utils/logger';
-import type { AuthUser, Role, SessionData } from './AuthInterfaces';
+import type { AuthUser, SessionData } from './AuthInterfaces';
 
 const SESSION_KEY = 'edm-session';
-
-/** Sub=1 es admin. En producción el rol vendría en el JWT desde el servidor. */
-export const resolveRole = (sub: number): Role => (sub === 1 ? 'admin' : 'user');
 
 export const sessionStore = {
   save(data: SessionData): void {
@@ -24,7 +21,6 @@ export const sessionStore = {
   },
 };
 
-/** Restaura sesión desde sessionStorage al recargar la página */
 export function restoreSession(): AuthUser | null {
   const session = sessionStore.load();
   if (!session.loggedIn || !session.accessToken) return null;
@@ -32,5 +28,5 @@ export function restoreSession(): AuthUser | null {
   const payload = decodeToken(session.accessToken);
   if (!payload) return null;
   tokenStore.set(session.accessToken);
-  return { ...payload, role: resolveRole(payload.sub) };
+  return payload as AuthUser;
 }
