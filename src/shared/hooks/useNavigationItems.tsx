@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Icon } from '@iconify/react';
+import { LayoutDashboard, CheckSquare, Users } from 'lucide-react';
 
 export interface NavSection {
   section: string;
@@ -11,15 +11,14 @@ export function useNavigationItems(): NavSection[] {
     {
       section: 'General',
       items: [
-        { url: '/dashboard', label: 'Dashboard',  icon: <Icon icon="mdi:view-dashboard-outline" width={18} /> },
-        { url: '/tasks',     label: 'Mis Tareas', icon: <Icon icon="mdi:clipboard-check-outline" width={18} /> },
-        { url: '/logs',      label: 'Mis Logs',   icon: <Icon icon="mdi:file-document-outline" width={18} /> },
+        { url: '/dashboard', label: 'Dashboard',  icon: <LayoutDashboard size={18} /> },
+        { url: '/tasks',     label: 'Mis Tareas', icon: <CheckSquare size={18} /> },
       ],
     },
     {
       section: 'Usuarios',
       items: [
-        { url: '/users', label: 'Usuarios', icon: <Icon icon="mdi:account-group-outline" width={18} /> },
+        { url: '/users', label: 'Usuarios', icon: <Users size={18} /> },
       ],
     },
   ];

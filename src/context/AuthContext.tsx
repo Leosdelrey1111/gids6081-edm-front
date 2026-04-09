@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { authService } from '@services/auth.service';
 import { tokenStore } from '@utils/token';
-import { logger } from '@utils/logger';
 import { sessionStore, restoreSession } from '@shared/auth/useAuthUtils';
 import type { AuthUser } from '@shared/auth/AuthInterfaces';
 
@@ -26,7 +25,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const restored = restoreSession();
     if (restored) {
       setUser(restored);
-      logger.info('Sesión restaurada', { userId: restored.sub });
     }
     setLoading(false);
   }, []);
@@ -36,7 +34,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     tokenStore.set(accessToken);
     sessionStore.save({ accessToken, loggedIn: true });
     setUser(payload as AuthUser);
-    logger.audit('LOGIN', payload.sub, { username });
   };
 
   const register = async (name: string, lastName: string, username: string, password: string) => {
@@ -44,11 +41,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     tokenStore.set(accessToken);
     sessionStore.save({ accessToken, loggedIn: true });
     setUser(payload as AuthUser);
-    logger.audit('REGISTER', payload.sub, { username });
   };
 
   const logout = () => {
-    logger.audit('LOGOUT', user?.sub);
     tokenStore.clear();
     sessionStore.clear();
     setUser(null);

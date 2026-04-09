@@ -129,12 +129,8 @@ export function GenericTable<T extends ItemData>({
       <Pagination isCompact showControls showShadow color="primary" page={page} total={pages} onChange={setPage}
         classNames={{ item: 'bg-transparent dark:bg-transparent', cursor: 'bg-primary-500 dark:bg-primary-600', prev: 'text-gray-700 dark:text-gray-200', next: 'text-gray-700 dark:text-gray-200' }}
       />
-      <div className="flex gap-2">
-        <Button isDisabled={pages === 1} size="sm" variant="ghost" onPress={onPrevPage} className="text-gray-700 dark:text-gray-200">Anterior</Button>
-        <Button isDisabled={pages === 1} size="sm" variant="ghost" onPress={onNextPage} className="text-gray-700 dark:text-gray-200">Siguiente</Button>
-      </div>
     </div>
-  ), [filteredItems.length, page, pages, rowsPerPage, onRowsChange, onPrevPage, onNextPage, data.length]);
+  ), [filteredItems.length, page, pages, rowsPerPage, onRowsChange, data.length]);
 
   return (
     <Table isHeaderSticky aria-label="Tabla" bottomContent={bottomContent} bottomContentPlacement="outside"

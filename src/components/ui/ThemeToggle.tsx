@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Icon } from '@iconify/react';
+import { Button } from '@heroui/react';
+import { Sun, Moon } from 'lucide-react';
 
 export const ThemeToggle = ({ className = '' }: { className?: string }) => {
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
@@ -7,19 +8,14 @@ export const ThemeToggle = ({ className = '' }: { className?: string }) => {
   const toggle = () => {
     const next = !isDark;
     setIsDark(next);
-    if (next) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
+    document.documentElement.classList.toggle('dark', next);
+    localStorage.setItem('theme', next ? 'dark' : 'light');
   };
 
   return (
-    <button onClick={toggle}
-      className={`p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-zinc-100 ${className}`}>
-      <Icon icon={isDark ? 'mdi:weather-sunny' : 'mdi:weather-night'} width={20} />
-    </button>
+    <Button isIconOnly variant="light" size="sm" onPress={toggle} className={className}
+      aria-label="Cambiar tema">
+      {isDark ? <Sun size={16} /> : <Moon size={16} />}
+    </Button>
   );
 };

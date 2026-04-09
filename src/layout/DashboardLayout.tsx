@@ -4,7 +4,7 @@ import { useAuth } from '@context/AuthContext';
 import { useNavigationItems } from '@shared/hooks/useNavigationItems';
 import { Avatar, Button, Card, CardBody, CardFooter, Popover, PopoverContent, PopoverTrigger, Tooltip } from '@heroui/react';
 import { motion } from 'framer-motion';
-import { Icon } from '@iconify/react';
+import { ChevronLeft, ChevronRight, Menu, X, LogOut } from 'lucide-react';
 import { ThemeToggle } from '@components/ui/ThemeToggle';
 import { PageTransition } from '@components/ui/PageTransition';
 
@@ -70,21 +70,16 @@ export const DashboardLayout = () => {
             isIconOnly onPress={() => setAndSave(!toggleSidebar)}
             radius="full" variant="flat" size="sm"
             className={`absolute z-50 transition-all duration-300 ease-in-out
-              bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm
-              border border-gray-200/50 dark:border-gray-700/50
-              hover:bg-white/90 dark:hover:bg-gray-700/90
-              hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl
+              bg-white dark:bg-gray-800
+              border border-gray-200 dark:border-gray-700
+              shadow-sm hover:shadow-md active:scale-95
               ${isMobile
                 ? 'top-4 left-4 opacity-100 visible'
-                : 'top-12 left-[calc(100%-20px)] opacity-0 invisible group-hover:opacity-100 group-hover:visible group-hover:left-[calc(100%-16px)]'
+                : 'top-12 left-[calc(100%-20px)] opacity-0 invisible group-hover:opacity-100 group-hover:visible'
               }`}>
             {isMobile
-              ? toggleSidebar
-                ? <Icon icon="mdi:close" width={16} />
-                : <Icon icon="mdi:menu" width={16} />
-              : toggleSidebar
-                ? <Icon icon="mdi:chevron-left" width={16} />
-                : <Icon icon="mdi:chevron-right" width={16} />
+              ? toggleSidebar ? <X size={14} /> : <Menu size={14} />
+              : toggleSidebar ? <ChevronLeft size={14} /> : <ChevronRight size={14} />
             }
           </Button>
 
@@ -185,17 +180,17 @@ export const DashboardLayout = () => {
                     <Popover backdrop="opaque">
                       <PopoverTrigger asChild>
                         <Button isIconOnly variant="light" className="text-danger hover:bg-danger/10">
-                          <Icon icon="mdi:logout" width={20} />
+                          <LogOut size={16} />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[220px] p-4">
-                        <p className="text-sm font-bold text-center mb-3">¿Cerrar sesión?</p>
+                      <PopoverContent className="w-[200px] p-4">
+                        <p className="text-sm font-semibold text-center mb-3">¿Cerrar sesión?</p>
                         <div className="flex gap-2">
-                          <Button fullWidth size="sm" color="danger" variant="flat"
+                          <Button fullWidth size="sm" variant="flat"
                             onPress={() => (document.activeElement as HTMLElement)?.blur()}>
                             Cancelar
                           </Button>
-                          <Button fullWidth size="sm" color="success" className="text-white"
+                          <Button fullWidth size="sm" color="danger" className="text-white"
                             onPress={() => { logout(); navigate('/login', { replace: true }); }}>
                             Salir
                           </Button>
@@ -209,7 +204,7 @@ export const DashboardLayout = () => {
                     <Tooltip placement="right" delay={0} closeDelay={0} content={<div className="px-2 py-1 text-sm">Cerrar sesión</div>}>
                       <Button isIconOnly variant="light" className="text-danger hover:bg-danger/10"
                         onPress={() => { logout(); navigate('/login', { replace: true }); }}>
-                        <Icon icon="mdi:logout" width={20} />
+                        <LogOut size={16} />
                       </Button>
                     </Tooltip>
                   </div>

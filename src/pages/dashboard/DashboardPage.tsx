@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Chip } from '@heroui/react';
-import { Icon } from '@iconify/react';
+import { Button, Chip, addToast } from '@heroui/react';
+import { LayoutDashboard, CheckSquare, Users, AlertCircle, CheckCircle, User, Zap, Clock, Inbox } from 'lucide-react';
 import { useAuth } from '@context/AuthContext';
 import { taskService, type Task } from '@services/task.service';
 import { GenericCard } from '@components/ui/GenericCard';
@@ -15,7 +15,10 @@ export const DashboardPage = () => {
 
   useEffect(() => {
     if (!user) return;
-    taskService.getMyTasks(user.sub).then(setTasks).catch(() => {}).finally(() => setLoading(false));
+    taskService.getMyTasks(user.sub)
+      .then(setTasks)
+      .catch(err => addToast({ title: 'Error', description: err instanceof Error ? err.message : 'Error al cargar tareas.', color: 'danger' }))
+      .finally(() => setLoading(false));
   }, [user]);
 
   const total  = tasks.length;
@@ -23,33 +26,31 @@ export const DashboardPage = () => {
   const normal = total - high;
 
   const stats = [
-    { icon: <Icon icon="mdi:clipboard-list-outline" width={22} className="text-success" />,  value: loading ? '—' : total,  label: 'Total de tareas',  bg: 'bg-success/10' },
-    { icon: <Icon icon="mdi:alert-circle-outline"   width={22} className="text-danger" />,   value: loading ? '—' : high,   label: 'Alta prioridad',   bg: 'bg-danger/10'  },
-    { icon: <Icon icon="mdi:check-circle-outline"   width={22} className="text-success" />,  value: loading ? '—' : normal, label: 'Prioridad normal', bg: 'bg-success/10' },
-    { icon: <Icon icon="mdi:account-outline"        width={22} className="text-primary" />,  value: user?.name ?? '—',      label: 'Usuario activo',  bg: 'bg-primary/10' },
+    { icon: <CheckSquare size={22} className="text-success" />,  value: loading ? '—' : total,       label: 'Total de tareas',  bg: 'bg-success/10' },
+    { icon: <AlertCircle size={22} className="text-danger" />,   value: loading ? '—' : high,        label: 'Alta prioridad',   bg: 'bg-danger/10'  },
+    { icon: <CheckCircle size={22} className="text-success" />,  value: loading ? '—' : normal,      label: 'Prioridad normal', bg: 'bg-success/10' },
+    { icon: <User        size={22} className="text-primary" />,  value: user?.name ?? '—',            label: 'Usuario activo',   bg: 'bg-primary/10' },
   ];
 
   const quickLinks = [
-    { icon: <Icon icon="mdi:clipboard-check-outline" width={22} />, label: 'Mis Tareas',  to: '/tasks' },
-    { icon: <Icon icon="mdi:account-group-outline"   width={22} />, label: 'Usuarios',    to: '/users' },
-    { icon: <Icon icon="mdi:file-document-outline"   width={22} />, label: 'Mis Logs',    to: '/logs'  },
+    { icon: <CheckSquare size={22} />, label: 'Mis Tareas', to: '/tasks' },
+    { icon: <Users       size={22} />, label: 'Usuarios',   to: '/users' },
   ];
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <GenericRenderTitle
           title={`Bienvenido, ${user?.name ?? ''}`}
           subtitle="Aquí tienes un resumen de tu actividad"
-          icon={<Icon icon="mdi:view-dashboard-outline" width={18} color="white" />}
+          icon={<LayoutDashboard size={18} color="white" />}
           boxColor="green"
         />
-        <Button color="success" className="text-white font-semibold" onPress={() => navigate('/tasks')}>
+        <Button color="success" className="text-white font-semibold w-full sm:w-auto" onPress={() => navigate('/tasks')}>
           + Nueva tarea
         </Button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {stats.map(s => (
           <GenericCard key={s.label}>
@@ -65,10 +66,9 @@ export const DashboardPage = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4">
-        {/* Accesos rápidos */}
         <GenericCard>
           <div className="flex items-center gap-2 mb-4 px-1">
-            <Icon icon="mdi:lightning-bolt" width={18} className="text-primary" />
+            <Zap size={18} className="text-primary" />
             <span className="text-sm font-semibold text-foreground">Accesos Rápidos</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -82,19 +82,18 @@ export const DashboardPage = () => {
           </div>
         </GenericCard>
 
-        {/* Tareas recientes */}
         <GenericCard>
           <div className="flex items-center gap-2 mb-3 px-1">
-            <Icon icon="mdi:clock-outline" width={18} className="text-primary" />
+            <Clock size={18} className="text-primary" />
             <span className="text-sm font-semibold text-foreground">Tareas Recientes</span>
           </div>
           {loading ? (
             <div className="flex justify-center items-center py-12">
-              <Icon icon="mdi:loading" width={20} className="animate-spin text-success" />
+              <div className="w-5 h-5 border-2 border-success border-t-transparent rounded-full animate-spin" />
             </div>
           ) : tasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-2 text-default-400">
-              <Icon icon="mdi:tray-remove" width={36} className="opacity-50" />
+              <Inbox size={36} className="opacity-50" />
               <p className="text-sm">No tienes tareas aún</p>
             </div>
           ) : (

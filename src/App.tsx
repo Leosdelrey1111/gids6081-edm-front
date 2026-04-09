@@ -9,7 +9,6 @@ import { RegisterPage } from '@pages/auth/RegisterPage';
 import { DashboardPage } from '@pages/dashboard/DashboardPage';
 import { TasksPage } from '@pages/tasks/TasksPage';
 import { UsersPage } from '@pages/users/UsersPage';
-import { LogsPage } from '@pages/logs/LogsPage';
 
 export const App = () => (
   <BrowserRouter>
@@ -29,7 +28,6 @@ export const App = () => (
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/tasks"     element={<TasksPage />} />
               <Route path="/users"     element={<UsersPage />} />
-              <Route path="/logs"      element={<LogsPage />} />
             </Route>
           </Route>
 
