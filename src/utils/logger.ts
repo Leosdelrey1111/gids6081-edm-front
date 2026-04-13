@@ -3,7 +3,6 @@ import { http } from '@api/http';
 const sanitizeLog = (val: string) => val.replace(/[\r\n\t]/g, ' ').trim();
 
 const sendLog = (statusCode: number, path: string, errorCode?: string) => {
-  // Evitar loop: no loggear errores que vienen del propio endpoint de logs
   if (path.includes('/api/logs')) return;
   http.post('/api/logs', { statusCode, path, errorCode }).catch(() => {});
 };

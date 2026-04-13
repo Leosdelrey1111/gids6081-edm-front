@@ -36,6 +36,7 @@ export const DashboardLayout = () => {
   const location = useLocation();
   const navSections = useNavigationItems();
 
+  const [logoutOpen, setLogoutOpen] = useState(false);
   const [toggleSidebar, setToggleSidebar] = useState<boolean>(() => {
     const saved = sessionStorage.getItem("sidebar-collapsed");
     if (saved !== null) return saved === "false";
@@ -63,7 +64,6 @@ export const DashboardLayout = () => {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // Cerrar en mobile al navegar
   useEffect(() => {
     if (isMobile) setAndSave(false);
   }, [location.pathname]);
@@ -71,7 +71,6 @@ export const DashboardLayout = () => {
   return (
     <div className="flex flex-1 overflow-hidden">
       <div className="flex h-screen">
-        {/* Overlay mobile */}
         {isMobile && toggleSidebar && (
           <button
             className="fixed inset-0 bg-black/50 z-40 md:hidden"
@@ -80,9 +79,7 @@ export const DashboardLayout = () => {
           />
         )}
 
-        {/* Sidebar */}
         <div className="relative flex group">
-          {/* Toggle button */}
           <Button
             isIconOnly
             onPress={() => setAndSave(!toggleSidebar)}
@@ -129,7 +126,6 @@ export const DashboardLayout = () => {
             <Card
               className={`flex flex-col flex-grow bg-white dark:bg-[#18191a] rounded-sm p-2 h-full overflow-hidden`}
             >
-              {/* User info */}
               <div className="flex-shrink-0">
                 {!toggleSidebar && !isMobile ? (
                   <Tooltip
@@ -173,6 +169,7 @@ export const DashboardLayout = () => {
                           Usuario
                         </p>
                       </div>
+                      <ThemeToggle className="flex-shrink-0" />
                     </div>
                   </motion.div>
                 )}
@@ -260,76 +257,62 @@ export const DashboardLayout = () => {
                 ))}
               </CardBody>
 
-              {/* Footer */}
-              <CardFooter className="mt-auto flex-shrink-0">
+              <CardFooter className="mt-auto flex-shrink-0 flex-col gap-2 px-1">
+                <div className="h-px w-full bg-gradient-to-r from-transparent via-primary/50 dark:via-primary/40 to-transparent mb-1" />
                 {toggleSidebar ? (
-                  <div className="flex w-full justify-center items-center gap-4">
-                    <ThemeToggle />
-                    <Popover backdrop="opaque">
-                      <PopoverTrigger asChild>
-                        <Button
-                          isIconOnly
-                          variant="light"
-                          className="text-danger hover:bg-danger/10"
-                        >
-                          <LogOut size={16} />
+                  <Popover backdrop="opaque" isOpen={logoutOpen} onOpenChange={setLogoutOpen}>
+                    <PopoverTrigger asChild>
+                      <Button fullWidth radius="md" variant="light" color="danger"
+                        startContent={<LogOut size={16} className="flex-shrink-0" />}
+                        className="h-11 justify-start pl-2 rounded-sm">
+                        <span className="text-sm truncate">Cerrar sesión</span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[200px] p-4">
+                      <p className="text-sm font-semibold text-center mb-3">¿Cerrar sesión?</p>
+                      <div className="flex gap-2">
+                        <Button fullWidth size="sm" variant="flat" onPress={() => setLogoutOpen(false)}>
+                          Cancelar
                         </Button>
-                      </PopoverTrigger>
+                        <Button fullWidth size="sm" color="danger" className="text-white"
+                          onPress={() => { logout(); navigate("/login", { replace: true }); }}>
+                          Salir
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                ) : (
+                  <>
+                    <Tooltip placement="right" delay={0} closeDelay={0}
+                      content={<div className="px-2 py-1 text-sm">Tema</div>}>
+                      <ThemeToggle />
+                    </Tooltip>
+                    <Popover backdrop="opaque" placement="right" isOpen={logoutOpen} onOpenChange={setLogoutOpen}>
+                      <Tooltip placement="right" delay={0} closeDelay={0}
+                        content={<div className="px-2 py-1 text-sm">Cerrar sesión</div>}>
+                        <div>
+                          <PopoverTrigger asChild>
+                            <Button isIconOnly radius="md" variant="light" color="danger"
+                              className="h-11 w-full rounded-sm">
+                              <LogOut size={16} />
+                            </Button>
+                          </PopoverTrigger>
+                        </div>
+                      </Tooltip>
                       <PopoverContent className="w-[200px] p-4">
-                        <p className="text-sm font-semibold text-center mb-3">
-                          ¿Cerrar sesión?
-                        </p>
+                        <p className="text-sm font-semibold text-center mb-3">¿Cerrar sesión?</p>
                         <div className="flex gap-2">
-                          <Button
-                            fullWidth
-                            size="sm"
-                            variant="flat"
-                            onPress={() =>
-                              (document.activeElement as HTMLElement)?.blur()
-                            }
-                          >
+                          <Button fullWidth size="sm" variant="flat" onPress={() => setLogoutOpen(false)}>
                             Cancelar
                           </Button>
-                          <Button
-                            fullWidth
-                            size="sm"
-                            color="danger"
-                            className="text-white"
-                            onPress={() => {
-                              logout();
-                              navigate("/login", { replace: true });
-                            }}
-                          >
+                          <Button fullWidth size="sm" color="danger" className="text-white"
+                            onPress={() => { logout(); navigate("/login", { replace: true }); }}>
                             Salir
                           </Button>
                         </div>
                       </PopoverContent>
                     </Popover>
-                  </div>
-                ) : (
-                  <div className="flex w-full flex-col items-center gap-2">
-                    <ThemeToggle />
-                    <Tooltip
-                      placement="right"
-                      delay={0}
-                      closeDelay={0}
-                      content={
-                        <div className="px-2 py-1 text-sm">Cerrar sesión</div>
-                      }
-                    >
-                      <Button
-                        isIconOnly
-                        variant="light"
-                        className="text-danger hover:bg-danger/10"
-                        onPress={() => {
-                          logout();
-                          navigate("/login", { replace: true });
-                        }}
-                      >
-                        <LogOut size={16} />
-                      </Button>
-                    </Tooltip>
-                  </div>
+                  </>
                 )}
               </CardFooter>
             </Card>
@@ -337,7 +320,6 @@ export const DashboardLayout = () => {
         </div>
       </div>
 
-      {/* Main content */}
       <div className="h-screen flex flex-col flex-grow overflow-x-hidden min-w-0">
         <div className="min-w-full min-h-full overflow-auto">
           <Card className="min-w-full min-h-full flex flex-col bg-[#f9fafb] dark:bg-[#18191a] rounded-sm">

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useDisclosure, addToast } from '@heroui/react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@context/AuthContext';
 import { userService, type User, type CreateUserPayload, type UpdateUserPayload } from '@api/endpoints/user.service';
 import { validateCreateUser, validateUpdateUser, trimCreateUser, trimUpdateUser } from '@utils/validators/user.validators';
@@ -9,7 +10,8 @@ import { logger } from '@utils/logger';
 const EMPTY_CREATE: CreateUserPayload = { name: '', lastName: '', username: '', password: '' };
 
 export const useUsers = () => {
-  const { user: authUser } = useAuth();
+  const { user: authUser, logout } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers]           = useState<User[]>([]);
   const [loading, setLoading]       = useState(true);
   const [saving, setSaving]         = useState(false);
@@ -90,10 +92,16 @@ export const useUsers = () => {
 
   const handleDelete = async () => {
     if (!authUser || !selected) return;
+    const isSelf = selected.id === authUser.sub;
     try {
       await userService.remove(selected.id, authUser.sub);
       addToast({ title: 'Usuario eliminado', description: `El usuario "${selected.username}" fue eliminado.`, color: 'success' });
-      await loadUsers();
+      if (isSelf) {
+        logout();
+        navigate('/login', { replace: true });
+      } else {
+        await loadUsers();
+      }
     } catch (err) {
       addToast({ title: 'Error', description: err instanceof Error ? err.message : 'Error al eliminar.', color: 'danger' });
     }

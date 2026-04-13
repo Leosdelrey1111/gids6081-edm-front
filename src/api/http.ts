@@ -8,7 +8,7 @@ export const http = axios.create({
   baseURL: BASE_URL,
   timeout: 10_000,
   headers: { 'Content-Type': 'application/json' },
-  withCredentials: true, // para httpOnly cookies (refresh token)
+  withCredentials: true,
 });
 
 http.interceptors.request.use((config) => {
@@ -29,7 +29,6 @@ http.interceptors.response.use(
   (error: AxiosError<ApiErrorBody>) => {
     const status = error.response?.status;
     const data   = error.response?.data;
-    // 401 es flujo esperado (credenciales incorrectas), no loggear como error
     if (status !== 401) logger.error('HTTP Error', { status, url: error.config?.url });
     return Promise.reject(new Error(resolveMessage(status, data)));
   },

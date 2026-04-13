@@ -37,7 +37,7 @@ export const UsersPage = () => {
       case 'actions':   return (
         <div className="flex gap-1 justify-center">
           <ActionButton typeButton="edit" onPress={() => openEdit(u)} />
-          {u.id !== authUser?.sub && <ActionButton typeButton="delete" onPress={() => openConfirmDelete(u)} />}
+          <ActionButton typeButton="delete" onPress={() => openConfirmDelete(u)} />
         </div>
       );
       default: return null;

@@ -8,6 +8,8 @@ import { RegisterPage } from '@pages/auth/RegisterPage';
 import { DashboardPage } from '@pages/dashboard/DashboardPage';
 import { TasksPage } from '@pages/tasks/TasksPage';
 import { UsersPage } from '@pages/users/UsersPage';
+import { NotFoundPage } from '@pages/errors/NotFoundPage';
+import { ForbiddenPage } from '@pages/errors/ForbiddenPage';
 
 export function AppRoutes() {
   return (
@@ -28,7 +30,8 @@ export function AppRoutes() {
         </Route>
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/403" element={<ForbiddenPage />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

@@ -1,11 +1,3 @@
-/**
- * Mapea un mensaje de error del API al campo del formulario que le corresponde.
- * El API (NestJS) devuelve mensajes como:
- *   "name must be longer than or equal to 3 characters"
- *   "password must be longer than or equal to 8 characters"
- *   "username should not be empty"
- */
-
 const FIELD_KEYWORDS: Record<string, string[]> = {
   name:        ['name'],
   lastName:    ['lastname', 'last_name', 'apellido'],
