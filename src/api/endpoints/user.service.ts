@@ -1,4 +1,4 @@
-import { http } from '@services/http';
+import { http } from '@api/http';
 
 export interface User { id: number; name: string; lastName: string; username: string; createdAt: string; }
 export type CreateUserPayload = { name: string; lastName: string; username: string; password: string };

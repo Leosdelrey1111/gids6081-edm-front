@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { authService } from '@services/auth.service';
+import { authService } from '@api/endpoints/auth.service';
 import { tokenStore } from '@utils/token';
-import { sessionStore, restoreSession } from '@shared/auth/useAuthUtils';
-import type { AuthUser } from '@shared/auth/AuthInterfaces';
+import { sessionStore, restoreSession } from './authUtils';
+import type { AuthUser } from './AuthInterfaces';
 
 interface AuthContextValue {
   user: AuthUser | null;

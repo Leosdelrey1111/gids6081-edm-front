@@ -1,79 +1,20 @@
-import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, addToast } from '@heroui/react';
-import { useAuth } from '@context/AuthContext';
-import { authService } from '@services/auth.service';
-import { Input } from '@components/ui/Input';
-import { validateUsername } from '@utils/sanitize';
-import { logger } from '@utils/logger';
+import { Link } from 'react-router-dom';
+import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@heroui/react';
+import { useLogin } from '@hooks/useLogin';
+import { Input } from '@components/Input';
 
-const features = ['Gestión de tareas en tiempo real', 'Control de acceso seguro', 'Logs de auditoría y seguridad'];
+const features = [
+  'Gestión de tareas en tiempo real',
+  'Control de acceso seguro',
+  'Logs de auditoría y seguridad',
+];
 
 export const LoginPage = () => {
-  const { login } = useAuth();
-  const navigate = useNavigate();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const [resetUsername, setResetUsername] = useState('');
-  const [resetPassword, setResetPassword] = useState('');
-  const [resetConfirm, setResetConfirm] = useState('');
-  const [resetLoading, setResetLoading] = useState(false);
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!validateUsername(username)) {
-      addToast({ title: 'Usuario inválido', description: 'Debe tener entre 3 y 100 caracteres alfanuméricos.', color: 'danger' });
-      return;
-    }
-    if (password.length < 3) {
-      addToast({ title: 'Contraseña muy corta', description: 'La contraseña es demasiado corta.', color: 'danger' });
-      return;
-    }
-    setLoading(true);
-    try {
-      await login(username, password);
-      addToast({ title: '¡Bienvenido!', description: 'Sesión iniciada correctamente.', color: 'success' });
-      navigate('/dashboard', { replace: true });
-    } catch (err) {
-      logger.warn('Login failed', { username });
-      addToast({ title: 'Error al iniciar sesión', description: err instanceof Error ? err.message : 'Credenciales incorrectas.', color: 'danger' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleReset = async () => {
-    if (!resetUsername.trim()) {
-      addToast({ title: 'Campo requerido', description: 'Ingresa tu nombre de usuario.', color: 'warning' });
-      return;
-    }
-    if (resetPassword.length < 6) {
-      addToast({ title: 'Contraseña muy corta', description: 'Debe tener al menos 6 caracteres.', color: 'warning' });
-      return;
-    }
-    if (resetPassword !== resetConfirm) {
-      addToast({ title: 'Las contraseñas no coinciden', description: 'Verifica que ambas contraseñas sean iguales.', color: 'warning' });
-      return;
-    }
-    setResetLoading(true);
-    try {
-      await authService.resetPassword(resetUsername, resetPassword);
-      addToast({ title: 'Contraseña actualizada', description: 'Ya puedes iniciar sesión con tu nueva contraseña.', color: 'success' });
-      closeReset();
-    } catch (err) {
-      addToast({ title: 'Error', description: err instanceof Error ? err.message : 'Error al restablecer la contraseña.', color: 'danger' });
-    } finally {
-      setResetLoading(false);
-    }
-  };
-
-  const closeReset = () => {
-    onClose();
-    setResetUsername(''); setResetPassword(''); setResetConfirm('');
-  };
+  const {
+    username, setUsername, password, setPassword,
+    loginErrors, loading, handleSubmit,
+    resetModal, reset, setReset, resetErrors, resetLoading, handleReset, closeReset,
+  } = useLogin();
 
   return (
     <div className="min-h-[calc(100vh-64px)] grid grid-cols-1 md:grid-cols-2">
@@ -104,20 +45,14 @@ export const LoginPage = () => {
             <p className="text-gray-500 dark:text-zinc-500 text-sm mt-1">Ingresa tus credenciales para continuar</p>
           </div>
           <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
-            <Input id="username" label="Usuario" type="text"
-              value={username} onChange={e => setUsername(e.target.value)}
-              autoComplete="username" maxLength={100} required />
-            <Input id="password" label="Contraseña" type="password"
-              value={password} onChange={e => setPassword(e.target.value)}
-              autoComplete="current-password" maxLength={100} required />
+            <Input id="username" label="Usuario" type="text" value={username} onChange={e => setUsername(e.target.value)} error={loginErrors.username} autoComplete="username" maxLength={100} required />
+            <Input id="password" label="Contraseña" type="password" value={password} onChange={e => setPassword(e.target.value)} error={loginErrors.password} autoComplete="current-password" maxLength={100} required />
             <div className="flex justify-end">
-              <button type="button" onClick={onOpen}
-                className="text-xs text-emerald-500 dark:text-emerald-400 hover:underline bg-transparent border-none cursor-pointer">
+              <button type="button" onClick={resetModal.onOpen} className="text-xs text-emerald-500 dark:text-emerald-400 hover:underline bg-transparent border-none cursor-pointer">
                 ¿Olvidaste tu contraseña?
               </button>
             </div>
-            <Button type="submit" isLoading={loading} fullWidth size="lg"
-              className="bg-gradient-to-r from-green-600 to-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/40 mt-1">
+            <Button type="submit" isLoading={loading} fullWidth size="lg" className="bg-gradient-to-r from-green-600 to-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/40 mt-1">
               {loading ? 'Ingresando...' : 'Iniciar sesión →'}
             </Button>
           </form>
@@ -132,27 +67,20 @@ export const LoginPage = () => {
         </div>
       </div>
 
-      <Modal isOpen={isOpen} onClose={closeReset}>
+      <Modal isOpen={resetModal.isOpen} onClose={closeReset}>
         <ModalContent>
           <ModalHeader>Restablecer contraseña</ModalHeader>
           <ModalBody>
             <p className="text-gray-500 dark:text-zinc-400 text-sm mb-2">Ingresa tu usuario y la nueva contraseña.</p>
             <div className="flex flex-col gap-3">
-              <Input id="r-username" label="Usuario" value={resetUsername}
-                onChange={e => setResetUsername(e.target.value)} maxLength={100} />
-              <Input id="r-password" label="Nueva contraseña" type="password" value={resetPassword}
-                onChange={e => setResetPassword(e.target.value)} maxLength={100} />
-              <Input id="r-confirm" label="Confirmar contraseña" type="password" value={resetConfirm}
-                onChange={e => setResetConfirm(e.target.value)} maxLength={100} />
+              <Input id="r-username" label="Usuario"              value={reset.username} onChange={e => setReset(p => ({ ...p, username: e.target.value }))} error={resetErrors.username} maxLength={100} />
+              <Input id="r-password" label="Nueva contraseña"     type="password" value={reset.password} onChange={e => setReset(p => ({ ...p, password: e.target.value }))} error={resetErrors.password} maxLength={100} />
+              <Input id="r-confirm"  label="Confirmar contraseña" type="password" value={reset.confirm}  onChange={e => setReset(p => ({ ...p, confirm: e.target.value }))}  error={resetErrors.confirm}  maxLength={100} />
             </div>
           </ModalBody>
           <ModalFooter>
             <Button variant="flat" onPress={closeReset}>Cancelar</Button>
-            <Button isLoading={resetLoading}
-              className="bg-gradient-to-r from-green-600 to-emerald-500 text-white font-bold"
-              onPress={handleReset}>
-              Restablecer
-            </Button>
+            <Button isLoading={resetLoading} className="bg-gradient-to-r from-green-600 to-emerald-500 text-white font-bold" onPress={handleReset}>Restablecer</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

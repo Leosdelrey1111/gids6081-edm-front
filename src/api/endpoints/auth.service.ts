@@ -1,4 +1,4 @@
-import { http } from '@services/http';
+import { http } from '@api/http';
 import { decodeToken, type JwtPayload } from '@utils/token';
 
 interface AuthTokens { access_token: string; refresh_token: string; }

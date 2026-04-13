@@ -1,4 +1,4 @@
-import { http } from '@services/http';
+import { http } from '@api/http';
 
 export interface Log {
   id: number;

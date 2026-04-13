@@ -1,19 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Chip, Spinner, useDisclosure, Button, addToast } from '@heroui/react';
-import { useAuth } from '@context/AuthContext';
-import { taskService, type Task } from '@services/task.service';
-import { GenericCard } from '@components/ui/GenericCard';
-import { GenericRenderTitle } from '@components/ui/GenericRenderTitle';
-import { GenericTable } from '@components/ui/GenericTable';
-import { GenericDrawer } from '@components/ui/GenericDrawer';
-import { ConfirmActionModal } from '@components/ui/ConfirmActionModal';
-import { ActionButton } from '@components/ui/ActionButton';
-import { Input } from '@components/ui/Input';
-import { Checkbox } from '@heroui/react';
-import { validateLength } from '@utils/sanitize';
-import { logger } from '@utils/logger';
+import { Chip, Spinner, Button, Checkbox } from '@heroui/react';
 import { Icon } from '@iconify/react';
-import type { ColumnDefinition } from '@components/ui/configs/GenericTableConfigs';
+import { useTasks } from '@hooks/useTasks';
+import { AppIcon } from '@components/AppIcon';
+import { GenericCard } from '@components/GenericCard';
+import { GenericRenderTitle } from '@components/GenericRenderTitle';
+import { GenericTable } from '@components/GenericTable';
+import { GenericDrawer } from '@components/GenericDrawer';
+import { ConfirmActionModal } from '@components/ConfirmActionModal';
+import { ActionButton } from '@components/ActionButton';
+import { Input } from '@components/Input';
+import type { Task } from '@api/endpoints/task.service';
+import type { ColumnDefinition } from '@components/configs/GenericTableConfigs';
 
 const COLUMNS: ColumnDefinition[] = [
   { name: 'Nombre',      uid: 'name',        sortable: true  },
@@ -22,98 +19,15 @@ const COLUMNS: ColumnDefinition[] = [
   { name: 'Acciones',    uid: 'actions',     sortable: false },
 ];
 
-const TaskIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
-  </svg>
-);
-
 export const TasksPage = () => {
-  const { user } = useAuth();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<Task | null>(null);
-
-  // Drawer crear/editar
-  const { isOpen: isDrawerOpen, onOpen: openDrawer, onClose: closeDrawer } = useDisclosure();
-  // Modal confirmar eliminar
-  const { isOpen: isDeleteOpen, onOpen: openDelete, onOpenChange: changeDelete } = useDisclosure();
-
-  // Form state
-  const [form, setForm] = useState({ name: '', description: '', priority: false });
-  const [formErrors, setFormErrors] = useState<{ name?: string; description?: string }>({});
-  const [formApiError, setFormApiError] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  const loadTasks = useCallback(async () => {
-    if (!user) return;
-    setLoading(true);
-    try { setTasks(await taskService.getMyTasks(user.sub)); }
-    catch (err) {
-      addToast({ title: 'Error', description: err instanceof Error ? err.message : 'Error al cargar tareas.', color: 'danger' });
-      logger.error('TasksPage load error', { userId: user.sub });
-    } finally { setLoading(false); }
-  }, [user]);
-
-  useEffect(() => { loadTasks(); }, [loadTasks]);
-
-  const openCreate = () => {
-    setSelected(null);
-    setForm({ name: '', description: '', priority: false });
-    setFormErrors({}); setFormApiError('');
-    openDrawer();
-  };
-
-  const openEdit = (task: Task) => {
-    setSelected(task);
-    setForm({ name: task.name, description: task.description, priority: task.priority });
-    setFormErrors({}); setFormApiError('');
-    openDrawer();
-  };
-
-  const openConfirmDelete = (task: Task) => { setSelected(task); openDelete(); };
-
-  const validate = () => {
-    const errs: typeof formErrors = {};
-    if (!validateLength(form.name, 150)) errs.name = 'Nombre requerido (máx 150 chars).';
-    if (!validateLength(form.description, 200)) errs.description = 'Descripción requerida (máx 200 chars).';
-    setFormErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
-
-  const handleSave = async () => {
-    if (!user || !validate()) return;
-    setSaving(true); setFormApiError('');
-    try {
-      if (selected) {
-        await taskService.update(selected.id, form, user.sub);
-        addToast({ title: 'Tarea actualizada', description: `"${form.name}" fue actualizada correctamente.`, color: 'success' });
-      } else {
-        await taskService.create({ ...form, user_id: user.sub }, user.sub);
-        addToast({ title: 'Tarea creada', description: `"${form.name}" fue creada correctamente.`, color: 'success' });
-      }
-      closeDrawer();
-      await loadTasks();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al guardar.';
-      addToast({ title: 'Error', description: msg, color: 'danger' });
-    } finally { setSaving(false); }
-  };
-
-  const handleDelete = async () => {
-    if (!user || !selected) return;
-    try {
-      await taskService.remove(selected.id, user.sub);
-      addToast({ title: 'Tarea eliminada', description: `"${selected.name}" fue eliminada.`, color: 'success' });
-      await loadTasks();
-    } catch (err) {
-      addToast({ title: 'Error', description: err instanceof Error ? err.message : 'Error al eliminar.', color: 'danger' });
-    }
-  };
+  const {
+    tasks, loading, saving, selected, form, setForm, formErrors,
+    drawer, deleteModal,
+    openCreate, openEdit, openConfirmDelete, handleSave, handleDelete,
+  } = useTasks();
 
   const renderCell = (task: Task, key: string) => {
     switch (key) {
-      case 'id':          return <span className="text-default-400 text-xs">{task.id}</span>;
       case 'name':        return <span className="font-medium text-foreground">{task.name}</span>;
       case 'description': return <span className="text-default-500 text-sm">{task.description}</span>;
       case 'priority':    return <Chip size="sm" variant="flat" color={task.priority ? 'danger' : 'success'}>{task.priority ? '🔴 Alta' : '🟢 Normal'}</Chip>;
@@ -129,17 +43,14 @@ export const TasksPage = () => {
 
   return (
     <div className="space-y-4">
-      <div>
-        <GenericRenderTitle title="Mis Tareas" subtitle="Administra y organiza tus tareas pendientes" icon={<TaskIcon />} boxColor="green" />
-      </div>
+      <GenericRenderTitle title="Mis Tareas" subtitle="Administra y organiza tus tareas pendientes" icon={<AppIcon name="task" color="white" />} boxColor="green" />
 
       <GenericCard>
         {loading
           ? <div className="flex justify-center items-center py-16"><Spinner color="success" size="sm" /></div>
           : <GenericTable data={tasks} columns={COLUMNS} renderCell={renderCell} defaultSortColumn="name"
               topContentExtras={
-                <Button size="sm" color="success" className="text-white font-semibold" onPress={openCreate}
-                  startContent={<Icon icon="mdi:plus" width={16} />}>
+                <Button size="sm" color="success" className="text-white font-semibold" onPress={openCreate} startContent={<Icon icon="mdi:plus" width={16} />}>
                   Nueva tarea
                 </Button>
               }
@@ -147,52 +58,35 @@ export const TasksPage = () => {
         }
       </GenericCard>
 
-      {/* Drawer crear / editar */}
       <GenericDrawer
-        isOpen={isDrawerOpen}
-        onClose={closeDrawer}
+        isOpen={drawer.isOpen} onClose={drawer.onClose}
         title={selected ? 'Editar tarea' : 'Nueva tarea'}
         subtitle="Completa la información de la tarea"
         body={
           <div className="flex flex-col gap-4 pt-2">
-            <Input id="task-name" label="Nombre" value={form.name}
-              onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-              error={formErrors.name} maxLength={150} required />
-            <Input id="task-desc" label="Descripción" value={form.description}
-              onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-              error={formErrors.description} maxLength={200} required />
-            <Checkbox isSelected={form.priority} onValueChange={v => setForm(p => ({ ...p, priority: v }))} color="success">
-              Alta prioridad
-            </Checkbox>
+            <Input id="task-name" label="Nombre" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} error={formErrors.name} maxLength={150} required />
+            <Input id="task-desc" label="Descripción" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} error={formErrors.description} maxLength={200} required />
+            <Checkbox isSelected={form.priority} onValueChange={v => setForm(p => ({ ...p, priority: v }))} color="success">Alta prioridad</Checkbox>
           </div>
         }
         footer={
           <div className="flex gap-2 justify-end w-full">
-            <Button variant="flat" onPress={closeDrawer}>Cancelar</Button>
-            <Button color="success" className="text-white" isLoading={saving} onPress={handleSave}>
-              {saving ? 'Guardando...' : 'Guardar'}
-            </Button>
+            <Button variant="flat" onPress={drawer.onClose}>Cancelar</Button>
+            <Button color="success" className="text-white" isLoading={saving} onPress={handleSave}>{saving ? 'Guardando...' : 'Guardar'}</Button>
           </div>
         }
       />
 
-      {/* Modal confirmar eliminar */}
       <ConfirmActionModal
-        isOpen={isDeleteOpen}
-        onOpenChange={changeDelete}
+        isOpen={deleteModal.isOpen} onOpenChange={deleteModal.onOpenChange}
         title={
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
-              </svg>
-            </div>
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg"><AppIcon name="delete" size={20} color="white" /></div>
             <h3 className="text-xl font-bold">Eliminar tarea</h3>
           </div>
         }
         description={<p>¿Estás seguro de eliminar la tarea <strong>{selected?.name}</strong>?</p>}
-        onConfirm={handleDelete}
-        onCancel={() => {}}
+        onConfirm={handleDelete} onCancel={() => {}}
       />
     </div>
   );

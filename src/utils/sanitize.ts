@@ -8,9 +8,11 @@ export const sanitizeHtml = (dirty: string): string =>
 export const sanitizeText = (value: string): string =>
   value.replace(/[<>"'`]/g, '');
 
-/** Valida longitud mínima y máxima */
-export const validateLength = (value: string, max: number, min = 1): boolean =>
-  value.length >= min && value.length <= max;
+/** Valida longitud mínima y máxima (aplica trim internamente) */
+export const validateLength = (value: string, max: number, min = 1): boolean => {
+  const trimmed = value.trim();
+  return trimmed.length >= min && trimmed.length <= max;
+};
 
 /** Valida formato de username: alfanumérico + guiones/underscore */
 export const validateUsername = (username: string): boolean =>

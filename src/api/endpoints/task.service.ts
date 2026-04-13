@@ -1,4 +1,4 @@
-import { http } from '@services/http';
+import { http } from '@api/http';
 
 export interface Task { id: number; name: string; description: string; priority: boolean; user_id: number; }
 export interface CreateTaskPayload { name: string; description: string; priority: boolean; user_id: number; }

@@ -1,50 +1,16 @@
-import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Button, addToast } from '@heroui/react';
-import { useAuth } from '@context/AuthContext';
-import { Input } from '@components/ui/Input';
-import { validateUsername, validatePassword, validateLength } from '@utils/sanitize';
+import { Link } from 'react-router-dom';
+import { Button } from '@heroui/react';
+import { useRegister } from '@hooks/useRegister';
+import { Input } from '@components/Input';
 
-const features = ['Registro rápido y seguro', 'Acceso inmediato al sistema', 'Datos protegidos en todo momento'];
+const features = [
+  'Registro rápido y seguro',
+  'Acceso inmediato al sistema',
+  'Datos protegidos en todo momento',
+];
 
 export const RegisterPage = () => {
-  const { register } = useAuth();
-  const navigate = useNavigate();
-  const [form, setForm] = useState({ name: '', lastName: '', username: '', password: '', confirm: '' });
-  const [errors, setErrors] = useState<Partial<typeof form>>({});
-  const [loading, setLoading] = useState(false);
-
-  const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm(p => ({ ...p, [field]: e.target.value }));
-
-  const validate = () => {
-    const errs: Partial<typeof form> = {};
-    if (!validateLength(form.name, 200))     errs.name     = 'Nombre requerido (máx 200 chars).';
-    if (!validateLength(form.lastName, 300)) errs.lastName = 'Apellido requerido (máx 300 chars).';
-    if (!validateUsername(form.username))    errs.username = 'Usuario: 3-100 chars alfanuméricos.';
-    if (!validatePassword(form.password))    errs.password = 'Mín 8 chars, 1 mayúscula, 1 número, 1 especial.';
-    if (form.password !== form.confirm)      errs.confirm  = 'Las contraseñas no coinciden.';
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!validate()) {
-      addToast({ title: 'Formulario inválido', description: 'Corrige los errores antes de continuar.', color: 'warning' });
-      return;
-    }
-    setLoading(true);
-    try {
-      await register(form.name, form.lastName, form.username, form.password);
-      addToast({ title: '¡Cuenta creada!', description: 'Bienvenido a EDM App.', color: 'success' });
-      navigate('/dashboard', { replace: true });
-    } catch (err) {
-      addToast({ title: 'Error al registrarse', description: err instanceof Error ? err.message : 'Error al registrarse.', color: 'danger' });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { form, errors, loading, set, handleSubmit } = useRegister();
 
   return (
     <div className="min-h-[calc(100vh-64px)] grid grid-cols-1 md:grid-cols-2">
@@ -79,11 +45,10 @@ export const RegisterPage = () => {
               <Input id="name"     label="Nombre"   value={form.name}     onChange={set('name')}     error={errors.name}     maxLength={200} required />
               <Input id="lastName" label="Apellido" value={form.lastName} onChange={set('lastName')} error={errors.lastName} maxLength={300} required />
             </div>
-            <Input id="username" label="Usuario"             value={form.username} onChange={set('username')} error={errors.username} maxLength={100} required />
-            <Input id="password" label="Contraseña"          type="password" value={form.password} onChange={set('password')} error={errors.password} maxLength={100} required />
+            <Input id="username" label="Usuario"              value={form.username} onChange={set('username')} error={errors.username} maxLength={100} required />
+            <Input id="password" label="Contraseña"           type="password" value={form.password} onChange={set('password')} error={errors.password} maxLength={100} required />
             <Input id="confirm"  label="Confirmar contraseña" type="password" value={form.confirm}  onChange={set('confirm')}  error={errors.confirm}  maxLength={100} required />
-            <Button type="submit" isLoading={loading} fullWidth size="lg"
-              className="bg-gradient-to-r from-green-600 to-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/40 mt-1">
+            <Button type="submit" isLoading={loading} fullWidth size="lg" className="bg-gradient-to-r from-green-600 to-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/40 mt-1">
               {loading ? 'Registrando...' : 'Crear cuenta →'}
             </Button>
           </form>

@@ -1,54 +1,31 @@
-import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Chip, addToast } from '@heroui/react';
-import { LayoutDashboard, CheckSquare, Users, AlertCircle, CheckCircle, User, Zap, Clock, Inbox } from 'lucide-react';
-import { useAuth } from '@context/AuthContext';
-import { taskService, type Task } from '@services/task.service';
-import { GenericCard } from '@components/ui/GenericCard';
-import { GenericRenderTitle } from '@components/ui/GenericRenderTitle';
+import { Button, Chip } from '@heroui/react';
+import { useDashboard } from '@hooks/useDashboard';
+import { AppIcon } from '@components/AppIcon';
+import { GenericCard } from '@components/GenericCard';
+import { GenericRenderTitle } from '@components/GenericRenderTitle';
 
 export const DashboardPage = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user) return;
-    taskService.getMyTasks(user.sub)
-      .then(setTasks)
-      .catch(err => addToast({ title: 'Error', description: err instanceof Error ? err.message : 'Error al cargar tareas.', color: 'danger' }))
-      .finally(() => setLoading(false));
-  }, [user]);
-
-  const total  = tasks.length;
-  const high   = tasks.filter(t => t.priority).length;
-  const normal = total - high;
+  const { user, tasks, loading, total, high, normal } = useDashboard();
 
   const stats = [
-    { icon: <CheckSquare size={22} className="text-success" />,  value: loading ? '—' : total,       label: 'Total de tareas',  bg: 'bg-success/10' },
-    { icon: <AlertCircle size={22} className="text-danger" />,   value: loading ? '—' : high,        label: 'Alta prioridad',   bg: 'bg-danger/10'  },
-    { icon: <CheckCircle size={22} className="text-success" />,  value: loading ? '—' : normal,      label: 'Prioridad normal', bg: 'bg-success/10' },
-    { icon: <User        size={22} className="text-primary" />,  value: user?.name ?? '—',            label: 'Usuario activo',   bg: 'bg-primary/10' },
+    { icon: <AppIcon name="checkSquare" size={22} className="text-success" />, value: loading ? '—' : total,  label: 'Total de tareas',  bg: 'bg-success/10' },
+    { icon: <AppIcon name="alertCircle" size={22} className="text-danger" />,  value: loading ? '—' : high,   label: 'Alta prioridad',   bg: 'bg-danger/10'  },
+    { icon: <AppIcon name="checkCircle" size={22} className="text-success" />, value: loading ? '—' : normal, label: 'Prioridad normal', bg: 'bg-success/10' },
+    { icon: <AppIcon name="user"        size={22} className="text-primary" />, value: user?.name ?? '—',      label: 'Usuario activo',   bg: 'bg-primary/10' },
   ];
 
   const quickLinks = [
-    { icon: <CheckSquare size={22} />, label: 'Mis Tareas', to: '/tasks' },
-    { icon: <Users       size={22} />, label: 'Usuarios',   to: '/users' },
+    { icon: <AppIcon name="checkSquare" size={22} />, label: 'Mis Tareas', to: '/tasks' },
+    { icon: <AppIcon name="usersGroup"  size={22} />, label: 'Usuarios',   to: '/users' },
   ];
 
   return (
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <GenericRenderTitle
-          title={`Bienvenido, ${user?.name ?? ''}`}
-          subtitle="Aquí tienes un resumen de tu actividad"
-          icon={<LayoutDashboard size={18} color="white" />}
-          boxColor="green"
-        />
-        <Button color="success" className="text-white font-semibold w-full sm:w-auto" onPress={() => navigate('/tasks')}>
-          + Nueva tarea
-        </Button>
+        <GenericRenderTitle title={`Bienvenido, ${user?.name ?? ''}`} subtitle="Aquí tienes un resumen de tu actividad" icon={<AppIcon name="dashboard" size={18} color="white" />} boxColor="green" />
+        <Button color="success" className="text-white font-semibold w-full sm:w-auto" onPress={() => navigate('/tasks')}>+ Nueva tarea</Button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -68,7 +45,7 @@ export const DashboardPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4">
         <GenericCard>
           <div className="flex items-center gap-2 mb-4 px-1">
-            <Zap size={18} className="text-primary" />
+            <AppIcon name="zap" size={18} className="text-primary" />
             <span className="text-sm font-semibold text-foreground">Accesos Rápidos</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -84,7 +61,7 @@ export const DashboardPage = () => {
 
         <GenericCard>
           <div className="flex items-center gap-2 mb-3 px-1">
-            <Clock size={18} className="text-primary" />
+            <AppIcon name="clock" size={18} className="text-primary" />
             <span className="text-sm font-semibold text-foreground">Tareas Recientes</span>
           </div>
           {loading ? (
@@ -93,7 +70,7 @@ export const DashboardPage = () => {
             </div>
           ) : tasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-2 text-default-400">
-              <Inbox size={36} className="opacity-50" />
+              <AppIcon name="inbox" size={36} className="opacity-50" />
               <p className="text-sm">No tienes tareas aún</p>
             </div>
           ) : (

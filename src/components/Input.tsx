@@ -7,7 +7,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
 }
 
-export const Input = ({ label, error, onChange, type, ...props }: InputProps) => {
+export const Input = ({ label, error, onChange, type, value, ...props }: InputProps) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (type !== 'password') e.target.value = sanitizeText(e.target.value);
     onChange?.(e);
@@ -21,6 +21,7 @@ export const Input = ({ label, error, onChange, type, ...props }: InputProps) =>
       labelPlacement="outside"
       isInvalid={!!error}
       errorMessage={error}
+      value={value as string ?? ''}
       onChange={handleChange}
       {...(props as any)}
     />
