@@ -7,7 +7,7 @@ interface AsyncState<T> {
   error: string | null;
 }
 
-/** Hook genérico para operaciones async con manejo de errores centralizado */
+// hook genérico para async con manejo de errores
 export const useAsync = <T,>() => {
   const [state, setState] = useState<AsyncState<T>>({ data: null, loading: false, error: null });
 

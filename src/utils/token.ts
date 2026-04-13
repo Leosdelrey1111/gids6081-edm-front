@@ -1,4 +1,4 @@
-/** Token en memoria — NO en localStorage para minimizar superficie XSS */
+// token en memoria, no en localStorage
 let _token: string | null = null;
 
 export const tokenStore = {
@@ -16,7 +16,7 @@ export interface JwtPayload {
   iat: number;
 }
 
-/** Decodifica payload JWT sin verificar firma (verificación en servidor) */
+// decodifica el payload sin verificar firma (eso lo hace el servidor)
 export const decodeToken = (token: string): JwtPayload | null => {
   try {
     const base64 = token.split('.')[1];

@@ -7,7 +7,7 @@ const FIELD_KEYWORDS: Record<string, string[]> = {
   priority:    ['priority'],
 };
 
-/** Dado un mensaje de error del API, devuelve el campo al que pertenece o null */
+// detecta a qué campo pertenece un mensaje de error
 const detectField = (msg: string): string | null => {
   const lower = msg.toLowerCase();
   for (const [field, keywords] of Object.entries(FIELD_KEYWORDS)) {
@@ -18,11 +18,7 @@ const detectField = (msg: string): string | null => {
   return null;
 };
 
-/**
- * Convierte el mensaje de error del API (string con " • " como separador)
- * en un objeto de errores por campo.
- * Los mensajes que no se puedan mapear a un campo van a la clave "_general".
- */
+// separa errores del API por campo; los no mapeados van a "_general"
 export const parseApiErrors = (apiMessage: string): Record<string, string> => {
   const parts   = apiMessage.split(' • ');
   const result: Record<string, string> = {};
